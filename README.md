@@ -12,6 +12,7 @@
   <img alt="python" src="https://img.shields.io/badge/Python-3.10%2B-3776ab?style=flat-square">
   <img alt="browser" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-required-4ecdc4?style=flat-square">
   <img alt="ai" src="https://img.shields.io/badge/AI-Claude%20%7C%20ChatGPT-6c8cff?style=flat-square">
+  <a href="LICENSE"><img alt="license" src="https://img.shields.io/github/license/keezxc1223/threads-auto-helper?style=flat-square"></a>
 </p>
 
 <p align="center">
@@ -432,6 +433,14 @@ Threads自動助手/
 - Threads 網頁改版可能讓部分功能暫時失效，需要更新 `threads_bot.py` 的選擇器；
 - 歡迎到 [Issues](https://github.com/keezxc1223/threads-auto-helper/issues) 回報問題（請附上錯誤畫面與 `data/app.log` 相關段落，**勿附上 `data/` 其他檔案**）；
 - 不保證永續維護，也不承擔因使用本工具所生的任何責任。
+
+---
+
+## License
+
+本專案採用 **MIT License** 授權釋出，詳見 [LICENSE](LICENSE)。
+
+允許自由使用、修改、再散佈與商業利用，惟須保留原始著作權與授權聲明。
 
 ---
 
