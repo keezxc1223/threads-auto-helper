@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import time
 import uuid
 from datetime import datetime, timedelta
 
@@ -9,6 +10,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import ai, db, threads_bot
+from . import worker as worker_mod
+from . import __version__
 from .cdp import Browser
 from .worker import next_comment_time, recent_comments, worker
 
@@ -33,8 +36,11 @@ def _norm_time(s: str | None) -> str:
 def state():
     t = db.today() + "%"
     return {
+        "version": __version__,
         "running": db.get_setting("worker_running") == "1",
         "busy": worker.busy,
+        "activity": {**worker_mod.ACT, "elapsed": int(time.time() - worker_mod.ACT["since"]) if worker_mod.ACT["since"] else 0},
+        "upcoming": worker_mod.upcoming(),
         "ai_provider": ai.PROVIDERS.get(db.get_setting("ai_provider"), ""),
         "accounts": db.one("SELECT COUNT(*) n FROM accounts")["n"],
         "scheduled": db.one("SELECT COUNT(*) n FROM posts WHERE status='scheduled'")["n"],

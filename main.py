@@ -5,7 +5,7 @@ import threading
 import time
 import webbrowser
 
-from app import db
+from app import __version__, db
 
 # pythonw / exe 沒有主控台，print 會出錯 → 導到記錄檔
 if sys.stdout is None or sys.stderr is None:
@@ -28,7 +28,7 @@ def free_port() -> int:
 
 def main():
     db.init()
-    db.log("程式啟動")
+    db.log(f"程式啟動 v{__version__}")
     worker.start()
     port = free_port()
     server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning"))

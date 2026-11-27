@@ -48,6 +48,7 @@ svg { width: 18px; height: 18px; flex: none; }
 }
 .brand-mark svg { width: 19px; height: 19px; }
 .brand-name { font-weight: 700; font-size: 16px; letter-spacing: .02em; }
+.brand-name .ver { margin-left: 6px; font-size: 11px; font-weight: 500; color: var(--side-mute); font-variant-numeric: tabular-nums; }
 .brand-sub { font-size: 12px; color: var(--side-mute); margin-top: 2px; }
 
 .nav { display: flex; flex-direction: column; gap: 3px; }
@@ -319,3 +320,24 @@ svg { width: 18px; height: 18px; flex: none; }
   .g4 { grid-template-columns: repeat(2, 1fr); }
   .split { grid-template-columns: 1fr; }
 }
+
+/* 總覽：目前狀態 */
+.now-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.now-main { display: flex; gap: 14px; align-items: flex-start; padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: #fbfaf8; }
+.now-main > div { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.now-main b { font-size: 17px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.now-main span { color: var(--ink-2); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+.now-main .now-time { font-size: 12px; font-weight: 500; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.now-main .now-step { display: flex; gap: 6px; align-items: flex-start; color: #b94608; font-weight: 600; }
+.now-main .now-step svg { width: 14px; height: 14px; margin-top: 3px; flex: none; }
+.now-main.busy { background: var(--accent-2); border-color: #f6c8a8; }
+.now-spin { flex: none; width: 18px; height: 18px; margin-top: 3px; border: 2.5px solid #f6c8a8; border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+.now-dot { flex: none; width: 12px; height: 12px; margin-top: 6px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 4px rgba(34, 197, 94, .15); }
+.now-main.paused .now-dot { background: var(--ink-3); box-shadow: 0 0 0 4px rgba(161, 161, 170, .18); }
+.now-sub { font-size: 12px; font-weight: 600; color: var(--ink-3); margin-bottom: 6px; }
+.now-row { display: grid; grid-template-columns: 44px auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 7px 2px; border-top: 1px solid var(--line); font-size: 13px; }
+.now-row:first-of-type { border-top: 0; }
+.now-row .t { font-variant-numeric: tabular-nums; color: var(--ink-2); font-weight: 600; }
+.now-row .m { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.now-row .r { color: var(--ink-3); font-size: 12px; white-space: nowrap; }
+@media (max-width: 1180px) { .now-grid { grid-template-columns: 1fr; } }

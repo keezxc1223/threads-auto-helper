@@ -8,6 +8,7 @@
 </p>
 
 <p align="center">
+  <a href="CHANGELOG.md"><img alt="version" src="https://img.shields.io/github/v/tag/keezxc1223/threads-auto-helper?style=flat-square&label=version&color=e8590c"></a>
   <img alt="platform" src="https://img.shields.io/badge/Windows-10%20%7C%2011-2d3748?style=flat-square">
   <img alt="python" src="https://img.shields.io/badge/Python-3.10%2B-3776ab?style=flat-square">
   <img alt="browser" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-required-4ecdc4?style=flat-square">
@@ -36,6 +37,7 @@
 - **多帳號**：每個帳號一個獨立的 Chrome 設定檔，登入一次就會記住，cookie 互不干擾。
 - **四種 AI 來源**：Claude 或 ChatGPT 訂閱登入（不另外計費），或 Claude／OpenAI API Key。
 - **防重複**：AI 寫的內容會和近期內容比相似度，太像就重寫；海巡看過的貼文不會再看。
+- **即時進度**：總覽頁顯示目前正在做什麼、做到哪一步，以及接下來的排程。
 - **資料全在本機**：帳號、貼文、留言、金鑰都存在 `data/`，不經過任何第三方伺服器（只有 AI 寫文時會把提示詞送到你選的 AI 服務）。
 
 ---
@@ -70,6 +72,9 @@
 
 <details>
 <summary><b>總覽</b></summary>
+
+- **目前狀態**：正在做什麼（例如「海巡中 · 搜尋「愛情」（關鍵字 1 / 2）· 已寫 1 / 3 則」）、哪個帳號、已進行多久；待命時顯示下一件事與倒數。
+- **接下來**：自動發文、排程貼文、海巡、留言佇列各自的下一次預計時間。
 
 - 今日發文數、今日留言數、排程數、待審核數。
 - 新手引導清單：AI 設定、新增帳號、建立規則，完成的項目會打勾。
@@ -422,6 +427,12 @@ Threads自動助手/
 ```
 
 </details>
+
+---
+
+## 版本
+
+目前版本寫在 `app/__init__.py`，介面左上角與總覽頁都會顯示。各版本的變更見 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 

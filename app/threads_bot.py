@@ -140,22 +140,29 @@ def search(account_id: int, keyword: str, recent: bool = True, limit: int = 20) 
         page.close()
 
 
-def _fill_dialog_and_submit(page, text: str, images: list[str] | None):
+def _noop(_msg: str):
+    pass
+
+
+def _fill_dialog_and_submit(page, text: str, images: list[str] | None, progress=_noop):
     """在發文／回覆的展開視窗裡：輸入文字 → 附加圖片 → 按「發佈」→ 等視窗關閉。"""
     if not page.wait_for(JS_DIALOG, timeout=10):
         raise CDPError("撰寫視窗沒有開啟")
     time.sleep(random.uniform(0.6, 1.2))
     page.click(f"({JS_DIALOG}).querySelector('[contenteditable=\"true\"]')")
     time.sleep(0.4)
+    progress(f"輸入內容（{len(text)} 字）")
     page.type_text(text)
     images = [p for p in (images or []) if os.path.exists(p)]
     if images:
+        progress(f"上傳 {len(images)} 個附件")
         page.set_files(f"({JS_DIALOG}).querySelector('input[type=file]')", images)
         time.sleep(3 + 2 * len(images))
     time.sleep(random.uniform(1, 2))
     submit = f"""[...({JS_DIALOG}).querySelectorAll('[role="button"],button')].find(b => b.innerText.trim() === '發佈')"""
     if not page.click(submit):
         raise CDPError("找不到「發佈」按鈕")
+    progress("已按下發佈，等待 Threads 完成")
     if not page.wait_for(f"!({JS_DIALOG})", timeout=120):
         raise CDPError("送出後視窗沒有關閉，請到瀏覽器確認")
     time.sleep(3)
@@ -173,23 +180,26 @@ JS_REPLY_EXPAND = r"""(() => {
 })()""" % JS_REPLY_BOX
 
 
-def reply(account_id: int, post_url: str, text: str, images: list[str] | None = None):
+def reply(account_id: int, post_url: str, text: str, images: list[str] | None = None, progress=_noop):
     images = [p for p in (images or []) if os.path.exists(p)]
     page = _with_page(account_id)
     try:
+        progress("開啟原貼文")
         page.navigate(post_url, settle=2.5)
         if not page.wait_for(JS_REPLY_BOX, timeout=15):
             raise CDPError("找不到回覆框（貼文可能已刪除、限制回覆，或帳號未登入）")
+        progress("閱讀貼文中")
         time.sleep(random.uniform(1.5, 4))  # 模擬閱讀
         if images:
             # 有圖片：用「展開撰寫工具」開完整回覆視窗（快速回覆列不能附圖）
             if not page.click(JS_REPLY_EXPAND):
                 raise CDPError("找不到展開回覆的按鈕")
-            _fill_dialog_and_submit(page, text, images)
+            _fill_dialog_and_submit(page, text, images, progress)
             return
         if not page.click(JS_REPLY_BOX):
             raise CDPError("無法點擊回覆框")
         time.sleep(random.uniform(0.4, 0.9))
+        progress(f"輸入留言（{len(text)} 字）")
         page.type_text(text)
         time.sleep(random.uniform(0.8, 1.6))
         typed = page.eval(f"({JS_REPLY_BOX}).innerText.trim().length")
@@ -197,6 +207,7 @@ def reply(account_id: int, post_url: str, text: str, images: list[str] | None = 
             raise CDPError("文字沒有輸入成功")
         if not page.click(JS_REPLY_SUBMIT):
             raise CDPError("找不到回覆送出鈕")
+        progress("已送出，確認結果")
         ok = page.wait_for(f"(({JS_REPLY_BOX}) || {{innerText:''}}).innerText.trim().length === 0", timeout=20)
         if not ok:
             raise CDPError("送出後沒有清空，可能送出失敗或被限制")
@@ -260,10 +271,11 @@ def find_post_urls(account_id: int, username: str, texts: list[str]) -> dict[int
         page.close()
 
 
-def publish(account_id: int, text: str, images: list[str] | None = None) -> str:
+def publish(account_id: int, text: str, images: list[str] | None = None, progress=_noop) -> str:
     """發文，成功後回傳貼文網址（找不到時回傳空字串，不影響發文結果）。"""
     page = _with_page(account_id)
     try:
+        progress("開啟 Threads 首頁")
         page.navigate(HOME, settle=3)
         state = page.eval(JS_LOGIN_STATE)
         if not state.get("logged"):
@@ -274,10 +286,12 @@ def publish(account_id: int, text: str, images: list[str] | None = None) -> str:
           .find(b => { const r = b.getBoundingClientRect(); return r.width > 0 && r.height > 0; })"""
         if not page.wait_for(opener, timeout=20) or not page.click(opener):
             raise CDPError("找不到「新串文」按鈕（頁面可能還沒載入完成）")
-        _fill_dialog_and_submit(page, text, images)
+        progress("開啟撰寫視窗")
+        _fill_dialog_and_submit(page, text, images, progress)
         username = state.get("username", "")
         if not username:
             return ""
+        progress("發佈成功，到個人頁抓貼文連結")
         for attempt in range(2):  # 剛發的貼文有時要等一下才出現在個人頁
             try:
                 url = _scan_profile(page, username, [text], max_scroll=2, newest_within_min=10).get(0, "")

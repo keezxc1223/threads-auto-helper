@@ -15,6 +15,23 @@ from . import ai, db, threads_bot
 
 _next_comment_at: dict[int, float] = {}
 
+# 目前正在做的事，給總覽頁顯示
+ACT = {"label": "", "detail": "", "step": "", "since": 0.0}
+
+
+def act(label: str = "", detail: str = "", step: str = ""):
+    """設定目前動作；label 為空代表待命。"""
+    ACT.update(label=label, detail=detail, step=step, since=time.time() if label else 0.0)
+
+
+def act_step(step: str):
+    ACT["step"] = step
+
+
+def _short(s: str, n: int = 28) -> str:
+    s = " ".join((s or "").split())
+    return s[:n] + ("…" if len(s) > n else "")
+
 
 def _fmt(d: datetime) -> str:
     return d.strftime("%Y-%m-%d %H:%M:%S")
@@ -104,6 +121,8 @@ def do_autopost() -> bool:
         recent = [r["text"] for r in db.all(
             "SELECT text FROM posts WHERE account_id=? ORDER BY id DESC LIMIT 6", (aid,))]
         name = _account_name(aid)
+        act("AI 寫文中", f"[{name}] 自動發文，主題「{topic}」",
+            f"今天第 {_auto_posts_today(aid) + 1} / {rule['per_day']} 篇")
         try:
             items = ai.write_posts(topic, rule["persona"], 1, rule["length"] or "中", recent)
         except Exception as e:
@@ -131,8 +150,10 @@ def do_due_post() -> bool:
     aid = p["account_id"]
     db.run("UPDATE posts SET status='sending' WHERE id=?", (p["id"],))
     db.log(f"[{_account_name(aid)}] 開始發文 #{p['id']}")
+    kind = "AI 自動貼文" if p.get("source") == "auto" else "排程貼文"
+    act("發文中", f"[{_account_name(aid)}] {kind}：{_short(p['text'])}")
     try:
-        url = threads_bot.publish(aid, p["text"], json.loads(p["images"] or "[]")) or ""
+        url = threads_bot.publish(aid, p["text"], json.loads(p["images"] or "[]"), progress=act_step) or ""
         db.run("UPDATE posts SET status='sent', posted_at=?, error='', url=? WHERE id=?", (db.now(), url, p["id"]))
         db.log(f"[{_account_name(aid)}] 發文成功 #{p['id']}", "ok")
     except Exception as e:
@@ -155,8 +176,12 @@ def do_queued_comment() -> bool:
         if _next_comment_at.get(aid, 0) > t or sent_last_hour(aid) >= limit:
             continue
         db.run("UPDATE comments SET status='sending' WHERE id=?", (c["id"],))
+        left = db.one("SELECT COUNT(*) n FROM comments WHERE account_id=? AND status='approved'", (aid,))["n"]
+        act("留言中", f"[{_account_name(aid)}] 回覆 @{c['author']}：{_short(c['draft'])}",
+            f"佇列還有 {left} 則 · 這小時已送 {sent_last_hour(aid)} / {limit} 則")
         try:
-            threads_bot.reply(aid, c["post_url"], c["draft"], json.loads(c.get("images") or "[]"))
+            threads_bot.reply(aid, c["post_url"], c["draft"], json.loads(c.get("images") or "[]"),
+                              progress=act_step)
             db.run("UPDATE comments SET status='sent', sent_at=?, error='' WHERE id=?", (db.now(), c["id"]))
             db.log(f"[{_account_name(aid)}] 已留言給 @{c['author']}：{c['draft'][:30]}", "ok")
         except Exception as e:
@@ -191,9 +216,11 @@ def run_task(task: dict):
     random.shuffle(keywords)
     made = 0
     db.log(f"[{name}] 海巡「{task['name']}」開始")
-    for kw in keywords:
+    act("海巡中", f"[{name}] 任務「{task['name']}」，目標 {want} 則留言")
+    for ki, kw in enumerate(keywords, 1):
         if made >= want:
             break
+        act_step(f"搜尋「{kw}」（關鍵字 {ki} / {len(keywords)}）· 已寫 {made} / {want} 則")
         try:
             posts = threads_bot.search(aid, kw, recent=bool(task["recent"]), limit=25)
         except Exception as e:
@@ -211,6 +238,7 @@ def run_task(task: dict):
             fresh += 1
             if p["likes"] < task["min_likes"] or len(p["text"]) < 4:
                 continue
+            act_step(f"「{kw}」AI 判斷 @{p['author']} 的貼文（第 {fresh} 篇新貼文）· 已寫 {made} / {want} 則")
             try:
                 draft = ai.draft_comment(p["text"], p["author"], task["persona"], kw, recent_comments(aid))
             except Exception as e:
@@ -240,11 +268,49 @@ def do_due_task() -> bool:
     return False
 
 
+def upcoming(max_items: int = 8) -> list[dict]:
+    """接下來要做的事（依時間排序），給總覽頁顯示。"""
+    now = datetime.now()
+    items: list[dict] = []
+
+    def add(when: datetime, kind: str, text: str):
+        items.append({"at": _fmt(when), "in": max(0, int((when - now).total_seconds())), "kind": kind, "text": text})
+
+    for r in db.all("SELECT * FROM autopost WHERE enabled=1"):
+        if r["next_at"]:
+            aid = r["account_id"]
+            add(datetime.strptime(r["next_at"], "%Y-%m-%d %H:%M:%S"), "自動發文",
+                f"[{_account_name(aid)}] AI 寫一篇並發出（今天已 {_auto_posts_today(aid)} / {r['per_day']} 篇）")
+    for p in db.all("SELECT * FROM posts WHERE status='scheduled' ORDER BY scheduled_at LIMIT 5"):
+        add(datetime.strptime(p["scheduled_at"][:19], "%Y-%m-%d %H:%M:%S"), "發文",
+            f"[{_account_name(p['account_id'])}] {_short(p['text'])}")
+    for t in db.all("SELECT * FROM tasks WHERE enabled=1"):
+        due = (datetime.strptime(t["last_run"], "%Y-%m-%d %H:%M:%S") + timedelta(minutes=t["interval_min"])
+               if t["last_run"] else now)
+        add(due, "海巡", f"[{_account_name(t['account_id'])}] 任務「{t['name']}」，最多 {t['max_per_run']} 則")
+    limit = hourly_limit()
+    for r in db.all("SELECT account_id, COUNT(*) n FROM comments WHERE status='approved' GROUP BY account_id"):
+        aid = r["account_id"]
+        nxt = _next_comment_at.get(aid, 0)
+        when = datetime.fromtimestamp(nxt) if nxt > time.time() else now
+        if sent_last_hour(aid) >= limit:
+            first = db.one("SELECT MIN(sent_at) t FROM comments WHERE account_id=? AND status='sent' AND sent_at>=?",
+                           (aid, _fmt(now - timedelta(hours=1))))
+            if first and first["t"]:
+                when = max(when, datetime.strptime(first["t"], "%Y-%m-%d %H:%M:%S") + timedelta(hours=1))
+        add(when, "留言", f"[{_account_name(aid)}] 送出下一則留言（佇列共 {r['n']} 則）")
+    items.sort(key=lambda x: x["at"])
+    return items[:max_items]
+
+
 class Worker(threading.Thread):
     def __init__(self):
         super().__init__(daemon=True)
         self.wake = threading.Event()
-        self.busy = ""
+
+    @property
+    def busy(self) -> str:
+        return ACT["label"]
 
     def run(self):
         steps = [("寫文中", do_autopost), ("發文中", do_due_post),
@@ -254,11 +320,12 @@ class Worker(threading.Thread):
             try:
                 if db.get_setting("worker_running") == "1":
                     for label, fn in steps:
-                        self.busy = label
-                        did = fn() or did
+                        try:
+                            did = fn() or did
+                        finally:
+                            act()
             except Exception as e:
                 db.log(f"排程錯誤：{e}", "error")
-            self.busy = ""
             if did:
                 continue
             self.wake.wait(10)

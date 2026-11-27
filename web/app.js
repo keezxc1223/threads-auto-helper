@@ -145,7 +145,10 @@ function renderNav() {
   const t = $('#runToggle');
   t.className = 'run-toggle' + (on ? ' on' : '');
   t.innerHTML = `<span class="dot"></span><span class="lbl">${on ? '自動執行中' : '已暫停'}</span><span class="sub">${on ? '點擊暫停' : '點擊啟動'}</span>`;
+  if (st.version) $('#ver').textContent = 'v' + st.version;
   $('#busy').innerHTML = st.busy ? `<span class="spin"></span>${esc(st.busy)}…` : '';
+  $('#busy').title = st.activity && st.activity.label ? `${st.activity.detail}
+${st.activity.step || ''}` : '';
 }
 
 document.addEventListener('click', e => {
@@ -184,7 +187,8 @@ R.home = async () => {
     [tasks.some(t => t.enabled), '建立海巡任務', '設定關鍵字，自動找文留言', 'patrol'],
   ];
   $('#view').innerHTML = `
-  <div class="grid g4">
+  <div class="card now-card" id="nowCard"></div>
+  <div class="grid g4" style="margin-top:16px">
     ${stat(I.send, '今日發文', st.posted_today, `${st.autopost || 0} 個帳號開啟自動發文`)}
     ${stat(I.cal, '排程中貼文', st.scheduled, '到時間會自動發出')}
     ${stat(I.chat, '今日留言', st.commented_today, `每帳號每小時上限 ${st.hourly_limit} 則`)}
@@ -207,8 +211,43 @@ R.home = async () => {
     </div>
   </div>`;
   drawLogs();
+  drawNow();
 };
 const stat = (icon, k, v, s) => `<div class="card stat"><div class="k">${icon}${k}</div><div class="v">${v ?? 0}</div><div class="s">${s}</div></div>`;
+
+/* ---- 總覽：目前狀態 + 接下來 ---- */
+const dur = sec => sec < 60 ? `${sec} 秒` : sec < 3600 ? `${Math.floor(sec / 60)} 分 ${sec % 60} 秒` : `${Math.floor(sec / 3600)} 小時 ${Math.floor(sec % 3600 / 60)} 分`;
+const until = sec => sec <= 30 ? '馬上' : sec < 3600 ? `${Math.round(sec / 60)} 分鐘後` : sec < 86400 ? `${Math.floor(sec / 3600)} 小時 ${Math.round(sec % 3600 / 60)} 分後` : '明天';
+const KIND_PILL = { '自動發文': 'info', '發文': 'info', '海巡': 'warn', '留言': 'ok' };
+function drawNow() {
+  const el = $('#nowCard');
+  if (!el) return;
+  const st = S.state, a = st.activity || {}, up = st.upcoming || [];
+  S.nowBase = { at: Date.now(), elapsed: a.elapsed || 0 };
+  let head;
+  if (!st.running) {
+    head = `<div class="now-main paused"><span class="now-dot"></span><div><b>已暫停</b><span>自動工作都停下來了，按左下角「點擊啟動」繼續</span></div></div>`;
+  } else if (a.label) {
+    head = `<div class="now-main busy"><span class="now-spin"></span><div>
+      <b>${esc(a.label)}<span class="now-time" id="nowElapsed">已進行 ${dur(a.elapsed || 0)}</span></b>
+      <span>${esc(a.detail)}</span>
+      ${a.step ? `<span class="now-step">${I.corner}${esc(a.step)}</span>` : ''}</div></div>`;
+  } else {
+    const n = up[0];
+    head = `<div class="now-main idle"><span class="now-dot"></span><div><b>待命中</b>
+      <span>${n ? `下一件事：${until(n.in)}（${n.at.slice(11, 16)}）${esc(n.kind)} · ${esc(n.text)}` : '目前沒有排定的工作，到「自動發文」或「自動海巡」建立規則'}</span></div></div>`;
+  }
+  el.innerHTML = `<div class="card-h"><h3>${I.radar}目前狀態</h3><span class="faint">每 3 秒更新</span></div>
+    <div class="now-grid">${head}
+      <div class="now-next"><div class="now-sub">接下來</div>
+        ${up.length ? up.map(u => `<div class="now-row"><span class="t">${u.at.slice(11, 16)}</span><span class="pill ${KIND_PILL[u.kind] || 'plain'}">${esc(u.kind)}</span><span class="m">${esc(u.text)}</span><span class="r">${until(u.in)}</span></div>`).join('')
+          : '<div class="faint" style="padding:6px 0">沒有排定的工作</div>'}
+      </div></div>`;
+}
+setInterval(() => {
+  const el = $('#nowElapsed');
+  if (el && S.nowBase) el.textContent = '已進行 ' + dur(S.nowBase.elapsed + Math.floor((Date.now() - S.nowBase.at) / 1000));
+}, 1000);
 
 function drawLogs() {
   const el = $('#logs');
@@ -792,7 +831,7 @@ function pollLogin(p) {
 
 /* ---------------- 輪詢 ---------------- */
 async function refreshState() {
-  try { S.state = await api('GET', '/api/state'); renderNav(); } catch { }
+  try { S.state = await api('GET', '/api/state'); renderNav(); drawNow(); } catch { }
 }
 async function refreshLogs() {
   try {
@@ -816,6 +855,6 @@ function softRefresh() {
   await refreshState();
   await refreshLogs();
   await go('home');
-  setInterval(refreshState, 4000);
+  setInterval(refreshState, 3000);
   setInterval(refreshLogs, 3000);
 })();
