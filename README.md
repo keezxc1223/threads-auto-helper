@@ -12,7 +12,6 @@
   <img alt="python" src="https://img.shields.io/badge/Python-3.10%2B-3776ab?style=flat-square">
   <img alt="browser" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-required-4ecdc4?style=flat-square">
   <img alt="ai" src="https://img.shields.io/badge/AI-Claude%20%7C%20ChatGPT-6c8cff?style=flat-square">
-  <img alt="private" src="https://img.shields.io/badge/repo-private-555?style=flat-square">
 </p>
 
 <p align="center">
@@ -427,10 +426,11 @@ Threads自動助手/
 
 ## 專案性質聲明
 
-本專案為個人使用的私人工具，不是商業產品。
+本專案為個人獨立維護的開源工具，不是商業產品，也沒有專職團隊。
 
 - 只保證在**開發者本人的環境**（Windows 11 專業版 + Chrome + 繁體中文 Threads 介面）下運作正常；
 - Threads 網頁改版可能讓部分功能暫時失效，需要更新 `threads_bot.py` 的選擇器；
+- 歡迎到 [Issues](https://github.com/keezxc1223/threads-auto-helper/issues) 回報問題（請附上錯誤畫面與 `data/app.log` 相關段落，**勿附上 `data/` 其他檔案**）；
 - 不保證永續維護，也不承擔因使用本工具所生的任何責任。
 
 ---
