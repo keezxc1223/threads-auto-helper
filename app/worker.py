@@ -240,7 +240,8 @@ def run_task(task: dict):
                 continue
             act_step(f"「{kw}」AI 判斷 @{p['author']} 的貼文（第 {fresh} 篇新貼文）· 已寫 {made} / {want} 則")
             try:
-                draft = ai.draft_comment(p["text"], p["author"], task["persona"], kw, recent_comments(aid))
+                draft = ai.draft_comment(p["text"], p["author"], task["persona"], kw, recent_comments(aid),
+                                         length=task.get("length") or "中")
             except Exception as e:
                 db.log(f"[{name}] AI 產生留言失敗：{e}", "error")
                 return

@@ -290,7 +290,7 @@ def tasks():
     return db.all("SELECT t.*, a.name account_name FROM tasks t LEFT JOIN accounts a ON a.id=t.account_id ORDER BY t.id")
 
 
-TASK_FIELDS = ["account_id", "name", "keywords", "recent", "persona", "mode", "interval_min", "max_per_run", "min_likes", "enabled", "images"]
+TASK_FIELDS = ["account_id", "name", "keywords", "recent", "persona", "length", "mode", "interval_min", "max_per_run", "min_likes", "enabled", "images"]
 
 
 @app.post("/api/tasks")
@@ -359,12 +359,13 @@ def cancel(cid: int):
 
 @app.post("/api/comments/{cid}/redraft")
 def redraft(cid: int):
-    c = db.one("SELECT c.*, t.persona FROM comments c LEFT JOIN tasks t ON t.id=c.task_id WHERE c.id=?", (cid,))
+    c = db.one("SELECT c.*, t.persona, t.length FROM comments c LEFT JOIN tasks t ON t.id=c.task_id WHERE c.id=?", (cid,))
     if not c:
         raise HTTPException(404)
     try:
         avoid = [x for x in recent_comments(c["account_id"]) if x != c["draft"]] + ([c["draft"]] if c["draft"] else [])
-        d = ai.draft_comment(c["post_text"], c["author"], c.get("persona") or "", c["keyword"], avoid)
+        d = ai.draft_comment(c["post_text"], c["author"], c.get("persona") or "", c["keyword"], avoid,
+                             length=c.get("length") or "中")
     except Exception as e:
         _err(e)
     if d:

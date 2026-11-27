@@ -145,6 +145,7 @@
 | 關鍵字 | 可多個，依序搜尋 |
 | 搜尋排序 | 「最近」或「最相關」 |
 | 留言風格 | AI 寫留言時的語氣 |
+| 留言篇幅 | **短**（1 句、20 字內）、**中**（1～2 句、40 字內）、**長**（2～4 句、60～120 字，會分享經驗或看法） |
 | 最低讚數 | 低於門檻的貼文略過 |
 | 執行間隔 | 幾分鐘跑一次 |
 | 每次最多 | 每次執行最多留幾則 |
@@ -354,7 +355,7 @@ Threads 會偵測機器人行為。程式內建以下保護：
 | `accounts` | 帳號 | `name`、`username`、`logged_in`、`checked_at` |
 | `posts` | 貼文 | `text`、`images`、`scheduled_at`、`status`（`pending` / `scheduled` / `sending` / `sent` / `failed`）、`source`（`manual` / `auto`）、`posted_at`、`url` |
 | `autopost` | 自動發文規則（每帳號一筆） | `topics`、`persona`、`per_day`、`start_hour`、`end_hour`、`length`、`review`、`next_at` |
-| `tasks` | 海巡任務 | `keywords`、`recent`、`mode`（`auto` / `review`）、`interval_min`、`max_per_run`、`min_likes`、`last_run` |
+| `tasks` | 海巡任務 | `keywords`、`recent`、`length`（`短` / `中` / `長`）、`mode`（`auto` / `review`）、`interval_min`、`max_per_run`、`min_likes`、`last_run` |
 | `comments` | 留言 | `post_url`、`author`、`post_text`、`draft`、`status`（`pending` / `approved` / `sending` / `sent` / `failed` / `skipped` / `rejected`）、`sent_at` |
 | `seen` | 海巡看過的貼文 | `(account_id, post_url)` |
 | `logs` | 執行紀錄 | `ts`、`level`、`msg` |

@@ -441,13 +441,23 @@ def too_similar(text: str, others: list[str], threshold: float = 0.55) -> bool:
     return False
 
 
-def _comment_once(post_text: str, author: str, persona: str, keyword: str, avoid: list[str], strict: bool) -> str | None:
+# 留言篇幅：(提示文字, 超過幾字視為格式錯誤)
+COMMENT_LENGTH = {
+    "短": ("1 句、20 字以內，簡短有感", 80),
+    "中": ("1～2 句、40 字以內", 200),
+    "長": ("2～4 句、60～120 字，可以分享具體經驗、做法或看法", 300),
+}
+
+
+def _comment_once(post_text: str, author: str, persona: str, keyword: str, avoid: list[str], strict: bool,
+                  length: str = "中") -> str | None:
+    hint, cap = COMMENT_LENGTH.get(length, COMMENT_LENGTH["中"])
     brand = db.get_setting("brand_persona")
     system = (BASE_STYLE + (f"\n\n帳號定位：{brand}" if brand else "")
               + f"\n\n留言策略：{persona or '真誠地參與討論，提供有用的看法'}")
     prompt = (f"以下是在 Threads 搜尋「{keyword}」找到的一篇貼文（作者 @{author}）：\n"
               f"<thread_post>\n{post_text[:1500]}\n</thread_post>\n\n"
-              "請寫一則回覆留言：1～2 句、40 字以內、要針對這篇貼文的具體內容回應（提到貼文裡的細節），"
+              f"請寫一則回覆留言：{hint}，要針對這篇貼文的具體內容回應（提到貼文裡的細節），"
               "讀起來像真人隨手留言。不要放連結，不要硬推銷，不要每次都用問句。\n"
               "抱怨、提問、求推薦、分享經驗的貼文都是好的留言機會，要回。"
               "只有在貼文跟主題完全無關，或是政治、喪事、意外災難這類敏感話題時，才輸出 <reply>SKIP</reply>。\n")
@@ -464,7 +474,7 @@ def _comment_once(post_text: str, author: str, persona: str, keyword: str, avoid
     out = found[-1].strip("「」\"")
     if not out or out.upper().startswith("SKIP"):
         return None
-    if len(out) > 200:
+    if len(out) > cap:
         return FORMAT_ERROR
     return out
 
@@ -473,12 +483,12 @@ FORMAT_ERROR = "__FORMAT_ERROR__"
 
 
 def draft_comment(post_text: str, author: str, persona: str, keyword: str,
-                  avoid: list[str] | None = None) -> str | None:
+                  avoid: list[str] | None = None, length: str = "中") -> str | None:
     """回傳留言文字；判斷不適合留言、或重寫後仍和舊留言太像時回傳 None。"""
     avoid = avoid or []
     similar = False
     for _ in range(4):
-        out = _comment_once(post_text, author, persona, keyword, avoid, strict=similar)
+        out = _comment_once(post_text, author, persona, keyword, avoid, strict=similar, length=length)
         if out is None:
             return None
         if out == FORMAT_ERROR:

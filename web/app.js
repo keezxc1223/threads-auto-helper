@@ -575,7 +575,7 @@ function taskCard(t) {
   const kws = t.keywords.split(/[,，\n]/).map(s => s.trim()).filter(Boolean);
   return `<div class="card task ${t.enabled ? '' : 'off'}">
     <div class="card-h" style="margin:0">
-      <h3>${I.radar}${esc(t.name)}${t.mode === 'review' ? '<span class="pill warn">審核後才送</span>' : '<span class="pill ok">自動送出</span>'}</h3>
+      <h3>${I.radar}${esc(t.name)}${t.mode === 'review' ? '<span class="pill warn">審核後才送</span>' : '<span class="pill ok">自動送出</span>'}<span class="pill plain">留言${esc(t.length || '中')}</span></h3>
       <label class="switch" title="啟用"><input type="checkbox" data-ton="${t.id}" ${t.enabled ? 'checked' : ''}><span></span></label>
     </div>
     <div class="faint">帳號：${esc(t.account_name || '已刪除')}　上次執行：${t.last_run ? short(t.last_run) : '尚未執行'}${parseImgs(t.images).length ? `　每則附 ${parseImgs(t.images).length} 張圖` : ''}</div>
@@ -595,7 +595,7 @@ function taskCard(t) {
 }
 
 function taskModal(t) {
-  t = t || { account_id: S.accounts[0]?.id, name: '', keywords: '', recent: 1, persona: '', mode: 'auto', interval_min: 60, max_per_run: 5, min_likes: 0, enabled: 1 };
+  t = t || { account_id: S.accounts[0]?.id, name: '', keywords: '', recent: 1, persona: '', length: '中', mode: 'auto', interval_min: 60, max_per_run: 5, min_likes: 0, enabled: 1 };
   modal(`<h2>${t.id ? '編輯海巡任務' : '新增海巡任務'}</h2><div class="stack">
     <div class="grid g2">
       <div class="field"><label>任務名稱</label><input class="input" id="tName" value="${esc(t.name)}" placeholder="例如：洗車相關討論"></div>
@@ -604,6 +604,9 @@ function taskModal(t) {
     <div class="field"><label>關鍵字</label><textarea class="textarea" id="tKw" rows="3" placeholder="用逗號或換行分隔，例如：洗車, 汽車美容, 鍍膜推薦">${esc(t.keywords)}</textarea></div>
     <div class="field"><label>留言策略</label><textarea class="textarea" id="tPersona" rows="3" placeholder="例如：以洗車師傅的角度給實用建議，語氣親切，不主動推銷，不留連結">${esc(t.persona)}</textarea>
       <span class="hint">AI 會依這段寫留言；跟主題無關或爭議性的貼文會自動略過</span></div>
+    <div class="field"><label>留言篇幅</label><div class="seg" id="tLen">${[['短', '短（20 字內）'], ['中', '中（40 字內）'], ['長', '長（60～120 字）']].map(([v, l]) =>
+      `<button data-v="${v}" class="${(t.length || '中') === v ? 'on' : ''}">${l}</button>`).join('')}</div>
+      <span class="hint">短的像隨手回應；長的會分享經驗或看法，比較像真心參與討論</span></div>
     <div class="grid g3">
       <div class="field"><label>每幾分鐘執行</label><input class="input" type="number" min="10" id="tInt" value="${t.interval_min}"></div>
       <div class="field"><label>每輪最多留言</label><input class="input" type="number" min="1" max="30" id="tMax" value="${t.max_per_run}"></div>
@@ -617,13 +620,13 @@ function taskModal(t) {
     <div class="row end"><button class="btn ghost" onclick="closeModal()">取消</button><button class="btn accent" id="tSave">${I.check}儲存</button></div>
   </div>`);
   const getTaskImgs = imagePicker($('#tImgs'), parseImgs(t.images));
-  ['#tRecent', '#tMode'].forEach(sel => $(sel).querySelectorAll('button').forEach(b => b.onclick = () => { $(sel).querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); }));
+  ['#tRecent', '#tMode', '#tLen'].forEach(sel => $(sel).querySelectorAll('button').forEach(b => b.onclick = () => { $(sel).querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); }));
   $('#tSave').onclick = e => busy(e.currentTarget, async () => {
     const d = {
       account_id: +$('#tAcc').value, name: $('#tName').value.trim() || '未命名任務', keywords: $('#tKw').value.trim(),
       persona: $('#tPersona').value.trim(), interval_min: Math.max(10, +$('#tInt').value || 60),
       max_per_run: Math.max(1, +$('#tMax').value || 5), min_likes: +$('#tLikes').value || 0,
-      recent: +$('#tRecent .on').dataset.v, mode: $('#tMode .on').dataset.v, enabled: t.enabled ?? 1, images: getTaskImgs(),
+      recent: +$('#tRecent .on').dataset.v, length: $('#tLen .on').dataset.v, mode: $('#tMode .on').dataset.v, enabled: t.enabled ?? 1, images: getTaskImgs(),
     };
     if (!d.account_id) throw new Error('請先新增帳號');
     if (!d.keywords) throw new Error('請輸入關鍵字');

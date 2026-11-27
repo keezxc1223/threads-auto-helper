@@ -139,6 +139,8 @@ def init():
         # 舊資料庫升級
         if "review" not in [r[1] for r in c.execute("PRAGMA table_info(autopost)")]:
             c.execute("ALTER TABLE autopost ADD COLUMN review INTEGER DEFAULT 0")
+        if "length" not in [r[1] for r in c.execute("PRAGMA table_info(tasks)")]:
+            c.execute("ALTER TABLE tasks ADD COLUMN length TEXT DEFAULT '中'")
         if "url" not in [r[1] for r in c.execute("PRAGMA table_info(posts)")]:
             c.execute("ALTER TABLE posts ADD COLUMN url TEXT DEFAULT ''")
         for table in ("autopost", "tasks", "comments"):
