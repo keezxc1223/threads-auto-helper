@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>脆自動助手</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/></svg></div>
+      <div>
+        <div class="brand-name">脆自動助手</div>
+        <div class="brand-sub">Threads 排程・海巡</div>
+      </div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">
+      <button class="run-toggle" id="runToggle"></button>
+      <div class="busy" id="busy"></div>
+    </div>
+  </aside>
+  <main class="main">
+    <header class="top">
+      <div>
+        <h1 id="pageTitle"></h1>
+        <p id="pageSub"></p>
+      </div>
+      <div class="top-actions" id="topActions"></div>
+    </header>
+    <section class="view" id="view"></section>
+  </main>
+</div>
+<div class="modal-back" id="modalBack"><div class="modal" id="modal"></div></div>
+<div class="toasts" id="toasts"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

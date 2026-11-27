@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+websocket-client
+pywebview
+anthropic
+openai
