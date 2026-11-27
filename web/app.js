@@ -67,6 +67,12 @@ function modal(html) {
   $('#modalBack').classList.add('show');
   S.editing = true;
 }
+/* 刪除前的二次確認視窗 */
+function confirmDelete(title, msgHtml, onOk) {
+  modal(`<h2>${title}</h2><div class="muted">${msgHtml}</div>
+    <div class="row end" style="margin-top:18px"><button class="btn ghost" onclick="closeModal()">取消</button><button class="btn danger" id="delOk">${I.trash}確定刪除</button></div>`);
+  $('#delOk').onclick = e => busy(e.currentTarget, async () => { await onOk(); closeModal(); });
+}
 function closeModal() { $('#modalBack').classList.remove('show'); S.editing = false; }
 $('#modalBack').addEventListener('mousedown', e => { if (e.target.id === 'modalBack') closeModal(); });
 
@@ -475,7 +481,14 @@ function postItem(p) {
 async function postAction(btn, act, id, posts) {
   const p = posts.find(x => x.id === id);
   if (act === 'now') return busy(btn, async () => { await api('POST', `/api/posts/${id}/now`); toast('已排入，馬上發出'); R[S.view](); });
-  if (act === 'del') return busy(btn, async () => { await api('DELETE', `/api/posts/${id}`); R[S.view](); });
+  if (act === 'del') {
+    const note = p.status === 'sent'
+      ? '<p style="margin-top:8px">只會刪除本機紀錄，<b>不會</b>刪除 Threads 上已發佈的貼文。</p>'
+      : '<p style="margin-top:8px">刪除後這篇就不會發出。</p>';
+    return confirmDelete('刪除貼文', `<p>確定要刪除這篇貼文？刪除後無法復原。</p>
+      <div class="quote" style="margin-top:10px">${esc((p.text || '').slice(0, 160))}${(p.text || '').length > 160 ? '…' : ''}</div>${note}`,
+      async () => { await api('DELETE', `/api/posts/${id}`); toast('已刪除'); R[S.view](); });
+  }
   if (act === 'edit') {
     modal(`<h2>編輯貼文</h2><div class="stack">
       <div class="field"><label>帳號</label><select class="select" id="eAcc">${accountOptions(p.account_id)}</select></div>
@@ -583,7 +596,8 @@ function taskModal(t) {
 async function taskAction(btn, act, id, tasks) {
   const t = tasks.find(x => x.id === id);
   if (act === 'edit') return taskModal(t);
-  if (act === 'del') return busy(btn, async () => { await api('DELETE', `/api/tasks/${id}`); R.patrol(); });
+  if (act === 'del') return confirmDelete('刪除海巡任務', `<p>確定要刪除「${esc(t.name)}」？刪除後無法復原，已產生的留言紀錄會保留。</p>`,
+    async () => { await api('DELETE', `/api/tasks/${id}`); toast('已刪除'); R.patrol(); });
   if (act === 'run') return busy(btn, async () => { await api('POST', `/api/tasks/${id}/run`); toast('已排入，稍後開始執行，進度看「總覽」紀錄'); });
 }
 
