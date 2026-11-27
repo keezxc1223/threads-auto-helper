@@ -436,17 +436,6 @@ Threads自動助手/
 
 ---
 
-## 專案性質聲明
-
-本專案為個人獨立維護的開源工具，不是商業產品，也沒有專職團隊。
-
-- 只保證在**開發者本人的環境**（Windows 11 專業版 + Chrome + 繁體中文 Threads 介面）下運作正常；
-- Threads 網頁改版可能讓部分功能暫時失效，需要更新 `threads_bot.py` 的選擇器；
-- 歡迎到 [Issues](https://github.com/keezxc1223/threads-auto-helper/issues) 回報問題（請附上錯誤畫面與 `data/app.log` 相關段落，**勿附上 `data/` 其他檔案**）；
-- 不保證永續維護，也不承擔因使用本工具所生的任何責任。
-
----
-
 ## License
 
 本專案採用 **MIT License** 授權釋出，詳見 [LICENSE](LICENSE)。
