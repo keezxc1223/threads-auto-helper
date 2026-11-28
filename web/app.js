@@ -591,11 +591,13 @@ async function postAction(btn, act, id, posts) {
 function aiModal() {
   modal(`<h2>AI 幫我寫</h2><div class="stack">
     <div class="field"><label>主題</label><input class="input" id="aTopic" placeholder="例如：冬天洗車要注意什麼"></div>
-    <div class="field"><label>風格（選填）</label><input class="input" id="aPersona" placeholder="例如：幽默、像朋友聊天"></div>
+    <div class="field"><label>風格（選填）</label>${presetChips(WRITE_PRESETS)}
+      <textarea class="textarea" id="aPersona" rows="3" placeholder="點上面的範本直接套用，或自己寫，例如：幽默、像朋友聊天"></textarea></div>
     <div class="row"><div class="field"><label>篇數</label><select class="select" id="aCount" style="width:100px">${[1, 2, 3, 4, 5].map(n => `<option ${n === 3 ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
       <div class="field"><label>篇幅</label><div class="seg" id="aLen"><button data-v="短">短</button><button data-v="中" class="on">中</button><button data-v="長">長</button></div></div></div>
     <button class="btn accent" id="aGo">${I.wand}產生</button>
     <div id="aOut" class="stack"></div></div>`);
+  bindPresets($('#modal'), WRITE_PRESETS, $('#aPersona'));
   $('#aLen').querySelectorAll('button').forEach(b => b.onclick = () => { $('#aLen').querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); });
   $('#aGo').onclick = e => busy(e.currentTarget, async () => {
     if (!$('#aTopic').value.trim()) throw new Error('請輸入主題');
