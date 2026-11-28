@@ -202,9 +202,9 @@ def reply(account_id: int, post_url: str, text: str, images: list[str] | None = 
         progress(f"輸入留言（{len(text)} 字）")
         page.type_text(text)
         time.sleep(random.uniform(0.8, 1.6))
-        typed = page.eval(f"({JS_REPLY_BOX}).innerText.trim().length")
+        typed = page.eval(f"(({JS_REPLY_BOX}) || {{innerText:''}}).innerText.trim().length")
         if not typed:
-            raise CDPError("文字沒有輸入成功")
+            raise CDPError("文字沒有輸入成功（回覆框不見或被清空，可能頁面重新整理了），可到留言紀錄重送")
         if not page.click(JS_REPLY_SUBMIT):
             raise CDPError("找不到回覆送出鈕")
         progress("已送出，確認結果")

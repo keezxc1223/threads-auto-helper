@@ -326,6 +326,51 @@ async function accAction(btn, act, id) {
   });
 }
 
+/* ---- 內建風格範本（點一下帶入，可再自行修改） ---- */
+const WRITE_PRESETS = [
+  ['老闆親自經營', '我是自己開店的老闆，用第一人稱分享每天遇到的客人、工作日常和心得。講話直白、偶爾自嘲，讓人覺得是真人在經營，不硬推銷，最多在結尾輕輕帶一句店裡的服務。'],
+  ['專業知識分享', '以這個領域的專業人士身分寫作，把一個實用觀念講清楚：先點出大家常見的誤解，再用白話解釋正確做法。口吻有自信但不說教，避免艱澀術語，結尾可以問大家有沒有遇過。'],
+  ['幽默吐槽', '語氣幽默、愛吐槽，像在跟朋友抱怨日常的荒謬小事。可以用誇張比喻和反差製造笑點，但不酸人、不罵特定對象，讓人看了會想留言說「真的」。'],
+  ['溫暖療癒', '語氣溫柔、像寫給朋友的小日記，分享生活裡讓人覺得被療癒的瞬間或小感悟。句子短、節奏慢，不灌雞湯、不說教，讓讀的人覺得被理解。'],
+  ['懶人包清單', '用條列整理重點，像懶人包一樣好掃讀：一句吸睛開頭，接著 3～5 點具體建議，每點一行。內容要實用、可以馬上照做，結尾邀請大家補充。'],
+  ['故事敘事', '用說故事的方式寫：從一個具體場景或對話開頭，有起伏、有轉折，最後帶出一個小心得。細節要真實可信，像真人經歷，不要寫成寓言或廣告。'],
+  ['提問互動', '以拋問題為主，讓人很想回答：分享自己的一個選擇或困擾，給出兩三個選項或情境，請大家說說自己的做法或站哪邊。語氣輕鬆，問題要好回答。'],
+  ['真心評測', '以消費者的角度分享使用心得，優點缺點都講，口吻誠實中肯，像在跟朋友推薦或避雷。具體說出用了多久、在什麼情況下用，不誇大、不像業配。'],
+  ['犀利觀點', '針對一個常見現象提出自己的看法，觀點鮮明但有理有據，敢說出大家心裡想但沒說的話。語氣犀利不失禮貌，避開政治與人身攻擊，結尾問大家同不同意。'],
+  ['輕鬆碎念', '像隨手發的動態，短短幾句碎念當下的心情或觀察，口語、隨性、有生活感。不需要完整結論，可以帶一點小幽默，讓人覺得這個帳號很像朋友。'],
+];
+const PATROL_PRESETS = [
+  ['真誠參與討論', '像一般網友真誠地參與討論，針對貼文內容回應自己的想法或類似經驗。語氣自然親切，不推銷、不留連結、不提自己的店或品牌。'],
+  ['專業建議', '以這個領域的專業人士角度，針對貼文的問題給一個具體、可以馬上做的建議。口吻友善不說教，不主動推銷，不留連結。'],
+  ['同理共鳴', '先對貼文作者的處境或心情表示理解，再分享一點自己的類似經驗。語氣溫暖、像朋友安慰，不給說教式的建議。'],
+  ['幽默回應', '用輕鬆幽默的方式回應貼文，可以接梗或自嘲，讓人看了會心一笑。不酸人、不嘲笑作者，貼文在抱怨嚴肅問題時就正經回。'],
+  ['經驗分享', '分享一個跟貼文主題相關的親身經驗（具體的時間、情境、結果），讓留言有參考價值。像過來人提醒，不推銷。'],
+  ['好奇追問', '針對貼文裡的細節表達好奇，問一個具體、好回答的問題，讓作者想回覆。偶爾附上一句自己的看法，不要每則都只是問句。'],
+  ['稱讚鼓勵', '具體指出貼文裡做得好或說得好的地方並給予鼓勵，避免空泛的「好棒」「推」。語氣真誠，不浮誇，不像機器人。'],
+  ['補充資訊', '針對貼文內容補充一個對方可能不知道的小知識或注意事項，簡短清楚。語氣謙虛，用「我自己是…」「之前聽過…」這類口吻，不糾正、不說教。'],
+  ['在地朋友', '以在地人的身分回應，口吻像住附近的朋友，可以提到在地生活經驗或常見狀況。親切隨和，不推銷特定店家。'],
+  ['低調品牌', '以品牌小編的身分自然參與討論，先回應貼文本身提供價值；只有在對方明確求推薦時，才可以輕輕提到自家服務，不留連結、不硬推。'],
+];
+
+function presetChips(list) {
+  return `<div class="presets">${list.map(([name], i) => `<button type="button" class="preset" data-preset="${i}">${esc(name)}</button>`).join('')}</div>`;
+}
+
+function bindPresets(root, list, box) {
+  const btns = [...root.querySelectorAll('[data-preset]')];
+  const mark = () => btns.forEach(b => b.classList.toggle('on', box.value.trim() === list[+b.dataset.preset][1]));
+  btns.forEach(b => b.onclick = () => {
+    const [name, text] = list[+b.dataset.preset];
+    box.focus(); box.select();
+    // 用 insertText 取代，瀏覽器的復原（Ctrl+Z）還能拿回原本的內容
+    if (!document.execCommand('insertText', false, text)) box.value = text;
+    mark();
+    toast(`已套用「${name}」，可以直接修改；按 Ctrl+Z 可復原`);
+  });
+  box.addEventListener('input', mark);
+  mark();
+}
+
 /* ---- 自動發文 ---- */
 R.autopost = async () => {
   const rules = await api('GET', '/api/autopost');
@@ -335,6 +380,7 @@ R.autopost = async () => {
     root.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
       b.parentElement.querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on');
     });
+    bindPresets(root, WRITE_PRESETS, root.querySelector('[name=persona]'));
     bindLimitWarn(root.querySelector('[name=per_day]'), root.querySelector('[data-warn]'), 'post');
     const getImgs = imagePicker(root.querySelector('[data-imgs]'), parseImgs(r.images));
     root.querySelector('[data-save]').onclick = e => busy(e.currentTarget, async () => {
@@ -379,8 +425,9 @@ function ruleCard(r) {
         <textarea class="textarea" name="topics" rows="5" placeholder="一行一個，每次隨機挑一個寫&#10;例如：&#10;洗車常見迷思&#10;鍍膜值不值得&#10;客人愛車小故事">${esc(r.topics)}</textarea>
         <span class="hint">每次發文從這裡隨機挑一個主題，AI 會避開最近發過的內容</span></div>
       <div class="field"><label>寫作風格</label>
+        ${presetChips(WRITE_PRESETS)}
         <textarea class="textarea" name="persona" rows="5" placeholder="例如：台中洗車店老闆，講話直白幽默，偶爾自嘲，不推銷">${esc(r.persona)}</textarea>
-        <span class="hint">口吻、身分、禁忌都可以寫在這裡</span></div>
+        <span class="hint">點上面的範本直接套用，或自己寫；口吻、身分、禁忌都可以寫在這裡</span></div>
     </div>
     <div class="field" style="margin-top:16px"><label>附加圖片（最多 5 張，每篇自動貼文都會附上）</label><div data-imgs></div></div>
     <div class="row between" style="margin-top:16px;align-items:flex-end">
@@ -602,8 +649,8 @@ function taskModal(t) {
       <div class="field"><label>使用帳號</label><select class="select" id="tAcc">${accountOptions(t.account_id)}</select></div>
     </div>
     <div class="field"><label>關鍵字</label><textarea class="textarea" id="tKw" rows="3" placeholder="用逗號或換行分隔，例如：洗車, 汽車美容, 鍍膜推薦">${esc(t.keywords)}</textarea></div>
-    <div class="field"><label>留言策略</label><textarea class="textarea" id="tPersona" rows="3" placeholder="例如：以洗車師傅的角度給實用建議，語氣親切，不主動推銷，不留連結">${esc(t.persona)}</textarea>
-      <span class="hint">AI 會依這段寫留言；跟主題無關或爭議性的貼文會自動略過</span></div>
+    <div class="field"><label>留言策略</label>${presetChips(PATROL_PRESETS)}<textarea class="textarea" id="tPersona" rows="3" placeholder="例如：以洗車師傅的角度給實用建議，語氣親切，不主動推銷，不留連結">${esc(t.persona)}</textarea>
+      <span class="hint">點上面的範本直接套用，或自己寫；跟主題無關或爭議性的貼文會自動略過</span></div>
     <div class="field"><label>留言篇幅</label><div class="seg" id="tLen">${[['短', '短（20 字內）'], ['中', '中（40 字內）'], ['長', '長（60～120 字）']].map(([v, l]) =>
       `<button data-v="${v}" class="${(t.length || '中') === v ? 'on' : ''}">${l}</button>`).join('')}</div>
       <span class="hint">短的像隨手回應；長的會分享經驗或看法，比較像真心參與討論</span></div>
@@ -619,6 +666,7 @@ function taskModal(t) {
     <div class="field"><label>搜尋排序</label><div class="seg" id="tRecent"><button data-v="1" class="${t.recent ? 'on' : ''}">最近（新貼文）</button><button data-v="0" class="${t.recent ? '' : 'on'}">最相關（熱門）</button></div></div>
     <div class="row end"><button class="btn ghost" onclick="closeModal()">取消</button><button class="btn accent" id="tSave">${I.check}儲存</button></div>
   </div>`);
+  bindPresets($('#modal'), PATROL_PRESETS, $('#tPersona'));
   const getTaskImgs = imagePicker($('#tImgs'), parseImgs(t.images));
   ['#tRecent', '#tMode', '#tLen'].forEach(sel => $(sel).querySelectorAll('button').forEach(b => b.onclick = () => { $(sel).querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); }));
   $('#tSave').onclick = e => busy(e.currentTarget, async () => {
