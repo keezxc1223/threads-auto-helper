@@ -339,6 +339,11 @@ def approve(cid: int, data: dict = Body(default={})):
     draft = (data.get("draft") or "").strip()
     if draft:
         db.run("UPDATE comments SET draft=? WHERE id=?", (draft, cid))
+    c = db.one("SELECT draft FROM comments WHERE id=?", (cid,))
+    if not c:
+        raise HTTPException(404)
+    if not (c["draft"] or "").strip():
+        raise HTTPException(400, "這則沒有留言內容，請先填寫或按「重寫」")
     db.run("UPDATE comments SET status='approved', error='' WHERE id=? AND status IN ('pending','failed','skipped','rejected')", (cid,))
     worker.wake.set()
     return {"ok": True}

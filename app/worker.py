@@ -243,6 +243,8 @@ def run_task(task: dict):
                 draft = ai.draft_comment(p["text"], p["author"], task["persona"], kw, recent_comments(aid),
                                          length=task.get("length") or "中")
             except Exception as e:
+                # AI 掛掉不是貼文的問題，取消「已看過」，下一輪還能再處理這篇
+                db.run("DELETE FROM seen WHERE account_id=? AND post_url=?", (aid, p["url"]))
                 db.log(f"[{name}] AI 產生留言失敗：{e}", "error")
                 return
             db.run("""INSERT INTO comments(task_id,account_id,keyword,post_url,author,post_text,likes,draft,images,status,created_at)

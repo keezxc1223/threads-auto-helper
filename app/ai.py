@@ -471,7 +471,7 @@ def _comment_once(post_text: str, author: str, persona: str, keyword: str, avoid
     found = _tagged(text, "reply")
     if not found:
         return FORMAT_ERROR
-    out = found[-1].strip("「」\"")
+    out = _unquote(found[-1])
     if not out or out.upper().startswith("SKIP"):
         return None
     if len(out) > cap:
@@ -480,6 +480,21 @@ def _comment_once(post_text: str, author: str, persona: str, keyword: str, avoid
 
 
 FORMAT_ERROR = "__FORMAT_ERROR__"
+
+_QUOTE_PAIRS = {"「": "」", "『": "』", '"': '"', "“": "”", "'": "'"}
+
+
+def _unquote(s: str) -> str:
+    """模型把整則留言包在引號裡時才拿掉外層引號；開頭／結尾本身是引號內容（如「…」笑死）就保留。"""
+    s = s.strip()
+    while len(s) >= 2 and _QUOTE_PAIRS.get(s[0]) == s[-1]:
+        inner = s[1:-1]
+        close = s[-1]
+        # 內層若還有同款引號（例如「A」跟「B」），代表外面那對不是包整句的，別拆
+        if s[0] in inner or close in inner:
+            break
+        s = inner.strip()
+    return s
 
 
 def draft_comment(post_text: str, author: str, persona: str, keyword: str,
